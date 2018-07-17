@@ -18,6 +18,8 @@ class CreatePaymentsTable extends Migration
         	$table->integer('receiver_id');
         	$table->integer('amount');
         	$table->string('token');
+        	$table->boolean("sent");
+        	$table->boolean("received");
             $table->increments('id');
             $table->timestamps();
         });

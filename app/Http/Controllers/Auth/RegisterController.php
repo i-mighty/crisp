@@ -33,7 +33,6 @@ class RegisterController extends Controller
     /**
      * Create a new controller instance.
      *
-     * @return void
      */
     public function __construct()
     {
@@ -50,7 +49,7 @@ class RegisterController extends Controller
     {
         return Validator::make($data, [
             'name' => 'required|string|max:255',
-            'matric' => 'required|integer|unique:users',
+            'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6|confirmed',
         ]);
     }
@@ -65,13 +64,14 @@ class RegisterController extends Controller
     {
         return User::create([
             'name' => $data['name'],
-            'matric_no' => $data['matric_no'],
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
     }
-	protected function registered(Request $request, $user) {
+	protected function registered($request, $user) {
 		$user->generateToken();
-		return response($user, 201);
+		$user->createAccount();
+        return response(collect(['status' =>201,  'message' => 'success', 'user' => collect($user), 'account' => collect($user->account), 'cards' => collect($user->account->cards)]), 201);
 	}
 
 }

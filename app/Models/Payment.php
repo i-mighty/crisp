@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     //
-	protected $fillable = ['sender_id', 'sender_id', 'receiver_id', 'receiver_id', 'amount', 'token'];
+	protected $fillable = ['sender_id', 'receiver_id', 'uid', 'amount', 'token', 'sent', 'received'];
 
 	protected function sender () {
 		$this->belongsTo('App\Models\Account', 'sender_id');

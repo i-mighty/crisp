@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Schema\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -17,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
     {
         //
 	    Builder::defaultStringLength(191);
+	    Relation::morphMap([
+	    	'user' => 'App\User',
+		    'merchant' => 'App\Models\Merchant',
+	    ]);
 
     }
 

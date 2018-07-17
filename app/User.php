@@ -4,6 +4,7 @@ namespace App;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Webpatser\Uuid\Uuid;
 
 class User extends Authenticatable
 {
@@ -16,7 +17,7 @@ class User extends Authenticatable
      */
 
     protected $fillable = [
-        'name', 'matric_no', 'password'
+        'name', 'email', 'password', 'uid', 'avatar'
     ];
 
     /**
@@ -28,14 +29,23 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
     public function account(){
-    	return $this->hasOne('App\Models\Account');
+    	return $this->morphOne('App\Models\Account', 'owner');
     }
 
 	public function generateToken()
 	{
-		$this->api_token = str_random(60);
+		$this->api_token = Uuid::generate()->string;
 		$this->save();
 
 		return $this->api_token;
+	}
+	public function createAccount(){
+    	$this->account()->create(['balance' => 2000]);
+	}
+	public function getUpdatedAtAttribute($value) {
+		return str_replace(" ", "T", $value);
+	}
+	public function getCreatedAtAttribute($value) {
+		return str_replace(" ", "T", $value);
 	}
 }

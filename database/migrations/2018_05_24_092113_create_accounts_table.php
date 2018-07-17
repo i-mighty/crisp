@@ -15,14 +15,13 @@ class CreateAccountsTable extends Migration
     public function up()
     {
         Schema::create('accounts', function (Blueprint $table) {
-        	$table->integer('user_id');
-        	$table->string('token');
-        	$table->string('number');
-        	$table->float('balance');
-            $table->increments('id');
+        	$table->increments('id');
+        	$table->morphs('owner');
+        	$table->string('token')->nullable();
+        	$table->float('balance')->default(0.0);
             $table->timestamps();
         });
-	    DB::update("ALTER TABLE MY_TABLE AUTO_INCREMENT = 111111;");
+	    DB::update("ALTER TABLE accounts AUTO_INCREMENT = 111111;");
     }
 
     /**

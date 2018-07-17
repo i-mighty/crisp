@@ -16,6 +16,21 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\Event' => [
             'App\Listeners\EventListener',
         ],
+	    'App\Events\PaymentReceivedSuccessful' =>[
+	        'App\Listener\CreditAccount'
+	    ],
+	    'App\Events\RechargeSuccessful' => [
+		    'App\Listener\CreditAccount'
+	    ],
+        'App\Events\TransferReceivedSuccessful' => [
+	        'App\Listener\CreditAccountsudsu'
+        ],
+	    'App\Events\PaymentMadeSuccessful' => [
+	        'App\Listener\DebitAccount'
+	    ],
+	    'App\Events\TransferMadeSuccessful' => [
+		    'App\Listener\DebitAccount'
+	    ]
     ];
 
     /**

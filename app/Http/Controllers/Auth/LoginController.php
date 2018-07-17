@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\User;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 
@@ -38,9 +39,9 @@ class LoginController extends Controller
     {
         $this->middleware('guest')->except('logout');
     }
-	protected function username(){
-		return 'matric_no';
-	}
+//	protected function usernazme(){
+//		return 'username';
+//	}
 	public function login(Request $request)
 	{
 		$this->validateLogin($request);
@@ -48,13 +49,14 @@ class LoginController extends Controller
 		if ($this->attemptLogin($request)) {
 			$user = $this->guard()->user();
 			$user->generateToken();
-
-			return response($user);
+			return response(collect(['status' =>202, 'message' => 'success', 'user' => collect($user), 'account' => collect($user->account), 'cards' => collect($user->account->cards)]), 200);
 		}
 
-		return $this->sendFailedLoginResponse($request);
+		return response(collect(
+		    ['status' => 279, 'message' => 'error',
+                'content' => 'Invalid email address or password']),422);
 	}
-	public function logout(Request $request)
+	public function logout($request)
 	{
 		$user = Auth::guard('api')->user();
 
@@ -62,7 +64,6 @@ class LoginController extends Controller
 			$user->api_token = null;
 			$user->save();
 		}
-
 		return response()->json(['data' => 'User logged out.'], 200);
 	}
 }
