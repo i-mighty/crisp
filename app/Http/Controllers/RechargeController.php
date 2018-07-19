@@ -17,8 +17,8 @@ class RechargeController extends Controller
     //
 	/**
 	 * Redirect the User to Paystack Payment Page
-	 * @return Url
-	 */
+	 * @return bool
+     */
 	//Paystack
 //	public function redirectToGateway() {
 //		return Paystack::getAuthorizationUrl()->redirectNow();
@@ -37,6 +37,13 @@ class RechargeController extends Controller
                 'expiryyear' => $request->expiryyear,
                 'token' => null
             ]);
+            return true;
+        }
+        else{
+            $card = Card::find($request->card_id);
+            if($card == null){
+
+            }
         }
     }
 	function getKey($seckey){
@@ -50,35 +57,38 @@ class RechargeController extends Controller
 		return $encryptionkey;
 
 	}
-	function encrypt3Des($data, $key){
-		$encData = openssl_encrypt($data, 'DES-EDE3', $key, OPENSSL_RAW_DATA);
+	function encrypt3Des($data){
+		$encData = openssl_encrypt($data, 'DES-EDE3', $this->getKey(getenv('RAVE_TEST_SECRET_KEY')), OPENSSL_RAW_DATA);
 		return base64_encode($encData);
 	}
-	public function collectCard($request, $pin, $amount){
-	    $card  = $this->card($request);
+	public function collectCard($card, $pin, $amount){
+//	    $card  = $this->card($request);
 		$parameters = [
-			'PBFPubKey' => getenv('RAVE_PUBLIC_KEY'), 'amount' => $amount, 'email' => $card->account()->owner()->email, 'IP' => request()->getClientIp(),
-			'txRef' => (getenv('PAY_REF').Carbon::now()),
+			'PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'amount' => $amount, 'pin' => $pin, 'suggested_auth'=>'PIN', 'phonenumber' => '09032435423', 'email' => 'josadegboye@gmail.com', 'IP' => '355426087298442',
+			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->toDateTimeString()),
 			];
-			return collect($card)->put($parameters);
+			return collect($card)->merge($parameters);
 	}
 	public function encryptCard($card, $pin, $amount){
-		return  $this->encrypt3Des(collect($this->collectCard($card, $pin, $amount)), $this->getKey(getenv('RAVE_SECRET_KEY')));
+		return  $this->encrypt3Des(collect($this->collectCard($card, $pin, $amount)));
 	}
 	public function initPayment($card, $pin, $amount){
 		$payload = $this->encryptCard($card, $pin, $amount);
-		$data = collect(['PBFPubKey' => getenv('RAVE_PUBLIC_KEY'), 'client' => $payload, 'alg' =>"3DES-24"]);
+		$data = ['PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'client' => $payload, 'alg' =>"3DES-24"];
 		$client = new Client();
-		$promise = $client->postAsync(getenv('RAVE_CHARGE_SANDBOX'), $data);//Async Call
+		$promise = $client->requestAsync('POST', getenv('RAVE_CHARGE_SANDBOX'), [
+            'json' => $data
+        ]);
 		$promise->then(
 			function (ResponseInterface $response){
-				$response->getBody()->
-				$this->getOtp();//Proceed
+				return $response;
 			},
 			function (BadResponseException $e){
-				$this->sendError();
+			    return $e;
+//				$this->sendError();
 			}
 		);
+		return $promise;
 	}
 	public function getOtp(){
 		$message = [
