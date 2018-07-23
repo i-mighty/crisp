@@ -55,8 +55,8 @@ class RechargeTest extends TestCase
         $this->assertTrue(true == true);
     }
     public function testInitPayment(){
-        $result = $this->controller->initPayment($this->card, 3009, 1000);//Receive response
-        $response = $result->wait();
-        $this->assertEquals("success", $response->getStatusCode());
+        $response = $this->controller->initPayment($this->card, 3009, 1000);//Receive response
+        $result = json_decode($response->getBody()->getContents());
+        $this->assertEquals("success", $result->data->authModelUsed);
     }
 }

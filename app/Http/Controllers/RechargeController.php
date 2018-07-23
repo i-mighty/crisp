@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Card;
+use App\Models\Transaction;
 use App\User;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
 use Psr\Http\Message\ResponseInterface;
 
@@ -76,33 +78,56 @@ class RechargeController extends Controller
 		$payload = $this->encryptCard($card, $pin, $amount);
 		$data = ['PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'client' => $payload, 'alg' =>"3DES-24"];
 		$client = new Client();
-		$promise = $client->requestAsync('POST', getenv('RAVE_CHARGE_SANDBOX'), [
-            'json' => $data
-        ]);
-		$promise->then(
-			function (ResponseInterface $response){
-				return $response;
-			},
-			function (BadResponseException $e){
-			    return $e;
-//				$this->sendError();
-			}
-		);
+        try {
+            $promise = $client->request('POST', getenv('RAVE_CHARGE_SANDBOX'), [
+                'json' => $data
+            ]);
+            $result = json_decode($promise->getBody()->getContents());
+            switch ($result->data->authModelUsed){
+                case "VBVSECURECODE":$response = $this->returnAuthUrl($result);
+                case "PIN": $response = $this->getOtp($result);
+            }
+            return $response;
+        } catch (GuzzleException $e) {
+            return $this->sendError($result);
+        }
+//		$promise->then(
+//			function (ResponseInterface $response){
+//			    $result = json_decode($response->getBody()->getContents());
+//			    echo $result;
+//			    switch ($result->data->authModelUsed){
+//			        case "VBVSECURECODE":$response = $this->returnAuthUrl();
+//                    case "PIN":;
+//                }
+//				return $response;
+//			},
+//			function (BadResponseException $e){
+//			    return $e;
+//			}
+//        );
 		return $promise;
 	}
-	public function getOtp(){
+	public function getOtp($res){
+        // Save transaction pending otp verification
+        $tx = Transaction::create([
+            'flwRef' => $res->data->flwRef,
+            'txRef' => $res->data-txRef,
+        ]);
 		$message = [
-			'status' => 'success', 'message' => 'RECEIVE_OTP', 'user' => User::find(auth()->user()->id)->with('account.card')
+			'status' => 'success', 'message' => 'RECEIVE_OTP', 'tx' => $tx
 		];
-		return response(collect($message), 00);
+		return response(collect($message), 200);
 	}
-	public function sendError(){
+	public function sendError($res){
 		$message = [
-			'status' => 'failed', 'message' => 'CHARGE_ERROR', 'user' => User::find(auth()->user()->id)->with('account.card')
+			'status' => 'failed', 'message' => 'CHARGE_ERROR',
 		];
-		return response(collect($message), 00);
+		return response(collect($message), 400);
 	}
 	public function validatePayment($otp){
 
 	}
+	public function returnAuthUrl($result){
+        return response();
+    }
 }
