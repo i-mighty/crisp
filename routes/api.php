@@ -43,6 +43,7 @@ Route::group(['middleware' => 'auth:api'], function (){
             'uses' => 'RechargeController@redirectToGateway',
             'as' => 'pay'
         ]);
+        Route::post('/otp/callback', 'RechargeController@otpCallback');
         Route::get('recharge/callback', 'RechargeController@handleGatewayCallback');
     });
 

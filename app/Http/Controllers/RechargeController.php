@@ -91,21 +91,6 @@ class RechargeController extends Controller
         } catch (GuzzleException $e) {
             return $this->sendError($result);
         }
-//		$promise->then(
-//			function (ResponseInterface $response){
-//			    $result = json_decode($response->getBody()->getContents());
-//			    echo $result;
-//			    switch ($result->data->authModelUsed){
-//			        case "VBVSECURECODE":$response = $this->returnAuthUrl();
-//                    case "PIN":;
-//                }
-//				return $response;
-//			},
-//			function (BadResponseException $e){
-//			    return $e;
-//			}
-//        );
-		return $promise;
 	}
 	public function getOtp($res){
         // Save transaction pending otp verification
@@ -114,7 +99,7 @@ class RechargeController extends Controller
             'txRef' => $res->data-txRef,
         ]);
 		$message = [
-			'status' => 'success', 'message' => 'RECEIVE_OTP', 'tx' => $tx
+			'status' => 'success', 'message' => 'authModel', 'value'=>'PIN', 'tx' => $tx
 		];
 		return response(collect($message), 200);
 	}
@@ -125,9 +110,21 @@ class RechargeController extends Controller
 		return response(collect($message), 400);
 	}
 	public function validatePayment($otp){
-
+        
 	}
-	public function returnAuthUrl($result){
-        return response();
+	public function returnAuthUrl($res){
+        //Save transaction pending validation
+        $tx = Transaction::create([
+            'flwRef' => $res->data->flwRef,
+            'txRef' => $res->data->txRef
+        ]);
+        return response(collect([
+            'status' => 'success', 'message' => 'authModel',
+            'value' => 'VBVSECURECODE', 'auth_url' => $res->data->authModelUsed,
+            'tx' => $tx]), 200);
+    }
+
+    public function otpCallback(){
+
     }
 }
