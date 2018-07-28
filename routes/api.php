@@ -22,6 +22,9 @@ use BaconQrCode\Writer;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user()->account;
 });
+Route::get('/', function (){
+    echo "Live and Grow";
+});
 //Username check
 Route::post('/name_available', function (Request $request){
 	$users = \App\User::where('username', $request->name)->count();
