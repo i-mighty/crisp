@@ -22,7 +22,9 @@ class AppServiceProvider extends ServiceProvider
 	    	'user' => 'App\User',
 		    'merchant' => 'App\Models\Merchant',
 	    ]);
-
+        if(env('APP_ENV') == 'production' || env('APP_ENV') == 'stage'){
+            URL::forceScheme('https');
+        }
     }
 
     /**
