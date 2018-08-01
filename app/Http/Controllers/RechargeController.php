@@ -67,7 +67,7 @@ class RechargeController extends Controller
 //	    $card  = $this->card($request);
 		$parameters = [
 			'PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'amount' => $amount, 'pin' => $pin, 'suggested_auth'=>'PIN', 'phonenumber' => '09032435423', 'email' => 'josadegboye@gmail.com', 'IP' => '355426087298442',
-			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->toDateString().Carbon::now()->toTimeString()), 'redirect_url' => getenv('REDIRECT_URL'),
+			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->timestamp()), 'redirect_url' => getenv('REDIRECT_URL'),
 			];
 			return collect($card)->merge($parameters);
 	}
@@ -120,7 +120,7 @@ class RechargeController extends Controller
 
     public function otpCallback($request){
         $client = new Client();
-        $data = ['PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'transaction_reference' => $request->txRef, 'otp' => $request->otp];
+        $data = ['PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'transaction_reference' => $request->tx->flwRef, 'otp' => $request->otp];
         try {
             $promise = $client->request("POST", getenv('RAVE_VALIDATE_SANDBOX'), ['json' => $data]);
             $res = json_decode($promise->getBody()->getContents());
@@ -133,7 +133,7 @@ class RechargeController extends Controller
                     'text' => "Please ensure to pin you sent is correct and resend"]),403);
             }
         } catch (GuzzleException $e) {
-//            return $this->sendError($res);
+            return $this->sendError($res);
         }
 
     }
@@ -144,9 +144,6 @@ class RechargeController extends Controller
             'status' => 'failed', 'message' => 'CHARGE_ERROR', 'value'=>'could not charge card'
         ];
         return response(collect($message), 400);
-    }
-    public function validatePayment($otp){
-
     }
     private function verify($tx){
 
