@@ -67,7 +67,7 @@ class RechargeController extends Controller
 //	    $card  = $this->card($request);
 		$parameters = [
 			'PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'amount' => $amount, 'pin' => $pin, 'suggested_auth'=>'PIN', 'phonenumber' => '09032435423', 'email' => 'josadegboye@gmail.com', 'IP' => '355426087298442',
-			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->toDateTimeString()),
+			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->toDateString().Carbon::now()->toTimeString()), 'redirect_url' => getenv('REDIRECT_URL'),
 			];
 			return collect($card)->merge($parameters);
 	}
@@ -97,34 +97,58 @@ class RechargeController extends Controller
         $tx = Transaction::create([
             'flwRef' => $res->data->flwRef,
             'txRef' => $res->data-txRef,
+            'payload' => json_encode($res),
         ]);
 		$message = [
-			'status' => 'success', 'message' => 'authModel', 'value'=>'PIN', 'tx' => $tx
+			'status' => 'success', 'message' => 'authModel', 'value'=>'PIN', 'tx' => $tx,
+            'display' => 'Please Wait'
 		];
 		return response(collect($message), 200);
-	}
-	public function sendError($res){
-		$message = [
-			'status' => 'failed', 'message' => 'CHARGE_ERROR',
-		];
-		return response(collect($message), 400);
-	}
-	public function validatePayment($otp){
-        
 	}
 	public function returnAuthUrl($res){
         //Save transaction pending validation
         $tx = Transaction::create([
             'flwRef' => $res->data->flwRef,
-            'txRef' => $res->data->txRef
+            'txRef' => $res->data->txRef,
+            'payload' => json_encode($res)
         ]);
         return response(collect([
             'status' => 'success', 'message' => 'authModel',
-            'value' => 'VBVSECURECODE', 'auth_url' => $res->data->authModelUsed,
+            'value' => 'VBVSECURECODE', 'auth_url' => $res->data->authurl,
             'tx' => $tx]), 200);
     }
 
-    public function otpCallback(){
+    public function otpCallback($request){
+        $client = new Client();
+        $data = ['PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'transaction_reference' => $request->txRef, 'otp' => $request->otp];
+        try {
+            $promise = $client->request("POST", getenv('RAVE_VALIDATE_SANDBOX'), ['json' => $data]);
+            $res = json_decode($promise->getBody()->getContents());
+            $tx = Transaction::find($res->data->tx->txRef);
+            if($res->data->data->responsecode == 00 && $res->data->data->responsemessage == "successful"){
+                $this->verify($tx);
+            }else{
+                return response(collect(['status' => 403,
+                    'message' => $res->message,
+                    'text' => "Please ensure to pin you sent is correct and resend"]),403);
+            }
+        } catch (GuzzleException $e) {
+//            return $this->sendError($res);
+        }
+
+    }
+    public function sendError($res){
+        //We could not connect to Rave.
+        //Notify the guys
+        $message = [
+            'status' => 'failed', 'message' => 'CHARGE_ERROR', 'value'=>'could not charge card'
+        ];
+        return response(collect($message), 400);
+    }
+    public function validatePayment($otp){
+
+    }
+    private function verify($tx){
 
     }
 }

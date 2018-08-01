@@ -16,10 +16,11 @@ class CreateTransactionsTable extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->increments('id');
             $table->timestamps();
-            $table->string('flwREf');
+            $table->string('flwRef');
             $table->integer('otp')->nullable();
             $table->boolean('completed')->default(false);
             $table->string('txRef');
+            $table->longText('payload');
         });
     }
 
