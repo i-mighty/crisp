@@ -43,4 +43,8 @@ class Account extends Model
 	    $this->balance+=$cost;
 	    $this->save();
     }
+    public function recharge($value){
+	    $this->balance+=$value;
+	    $this->save();
+    }
 }

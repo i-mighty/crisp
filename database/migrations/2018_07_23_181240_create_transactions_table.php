@@ -21,6 +21,7 @@ class CreateTransactionsTable extends Migration
             $table->boolean('completed')->default(false);
             $table->string('txRef');
             $table->longText('payload');
+            $table->integer('card_id');
         });
     }
 

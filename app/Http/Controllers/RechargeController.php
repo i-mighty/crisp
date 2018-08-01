@@ -96,7 +96,7 @@ class RechargeController extends Controller
         // Save transaction pending otp verification
         $tx = Transaction::create([
             'flwRef' => $res->data->flwRef,
-            'txRef' => $res->data-txRef,
+            'txRef' => $res->data->txRef,
             'payload' => json_encode($res),
         ]);
 		$message = [
@@ -126,7 +126,7 @@ class RechargeController extends Controller
             $res = json_decode($promise->getBody()->getContents());
             $tx = Transaction::find($res->data->tx->txRef);
             if($res->data->data->responsecode == 00 && $res->data->data->responsemessage == "successful"){
-                $this->verify($tx);
+                $this->verify($tx, $request);
             }else{
                 return response(collect(['status' => 403,
                     'message' => $res->message,
@@ -145,7 +145,31 @@ class RechargeController extends Controller
         ];
         return response(collect($message), 400);
     }
-    private function verify($tx){
+    private function verify($tx, $request){
+        $client = new Client();
+        try {
+            $promise = $client->request('POST', getenv('RAVE_VERIFY_SANDBOX', [
+                'json' => ['txref' => $tx->txRef, 'SECKEY' => getenv('RAVE_TEST_SECRET_KEY')]
+            ]));
+            $res = json_decode($promise->getBody()->getContents());
+            if("error" == $res->status){
+                $this->sendError($res);
+            }
+            if("success" == $res->status && 00 == $res->data->chargecode){
+                $user = $request->user();
+                $value = $res->data->amount;
+                $user->account->recharge($value);
+                $tx->completed = true;
+                $tx->save();
+                return response(collect(['status' => '200', 'message' => 'success', 'data' =>collect([
+                    'tx' => $tx, 'account' => $user->account
+                ])]),200);
+            }
+        } catch (GuzzleException $e) {
+
+        }
+    }
+    private function manageTimeout(){
 
     }
 }
