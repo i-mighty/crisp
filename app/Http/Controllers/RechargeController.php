@@ -67,7 +67,7 @@ class RechargeController extends Controller
 //	    $card  = $this->card($request);
 		$parameters = [
 			'PBFPubKey' => getenv('RAVE_TEST_PUBLIC_KEY'), 'amount' => $amount, 'pin' => $pin, 'suggested_auth'=>'PIN', 'phonenumber' => '09032435423', 'email' => 'josadegboye@gmail.com', 'IP' => '355426087298442',
-			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->timestamp()), 'redirect_url' => getenv('REDIRECT_URL'),
+			'txRef' => (getenv('PAY_REF_PREFIX').Carbon::now()->timestamp), 'redirect_url' => getenv('REDIRECT_URL'),
 			];
 			return collect($card)->merge($parameters);
 	}
@@ -83,8 +83,9 @@ class RechargeController extends Controller
                 'json' => $data
             ]);
             $result = json_decode($promise->getBody()->getContents());
+            echo json_encode($result);
             switch ($result->data->authModelUsed){
-                case "VBVSECURECODE":$response = $this->returnAuthUrl($result);
+                case "VBVSECURECODE": $response = $this->returnAuthUrl($result);
                 case "PIN": $response = $this->getOtp($result);
             }
             return $response;
@@ -101,7 +102,7 @@ class RechargeController extends Controller
         ]);
 		$message = [
 			'status' => 'success', 'message' => 'authModel', 'value'=>'PIN', 'tx' => $tx,
-            'display' => 'Please Wait'
+            'display' => 'Please input the One Time Pin sent to your phone'
 		];
 		return response(collect($message), 200);
 	}
@@ -113,7 +114,7 @@ class RechargeController extends Controller
             'payload' => json_encode($res)
         ]);
         return response(collect([
-            'status' => 'success', 'message' => 'authModel',
+            'status' => 'success', 'message' => 'authModel', 'display' => 'Please Wait',
             'value' => 'VBVSECURECODE', 'auth_url' => $res->data->authurl,
             'tx' => $tx]), 200);
     }
